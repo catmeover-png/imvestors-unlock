@@ -1,0 +1,56 @@
+name: LMTS Investor Unlocks Tracker
+
+on:
+  schedule:
+    - cron: "0 6 * * *"        # daily 06:00 UTC (07:00 Lisbon summer time)
+  workflow_dispatch:
+    inputs:
+      sender_filter:
+        description: "Only streams from these senders (comma-separated, empty = all LMTS streams)"
+        required: false
+        default: ""
+      upcoming_days:
+        description: "Horizon for Unlock_Upcoming sheet (days)"
+        required: false
+        default: "60"
+
+concurrency:
+  group: unlock-tracker
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run unlock tracker
+        env:
+          BASESCAN_API_KEY: ${{ secrets.BASESCAN_API_KEY }}
+          UNLOCK_SHEET_ID: ${{ secrets.UNLOCK_SHEET_ID }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          LOCKUP_ADDRESS: "0xc19a09a66887017f603e5df420ed3cb9a5c07c0a"
+          LMTS_TOKEN: "0x9eadbe35f3ee3bf3e28180070c429298a1b02f93"
+          SENDER_FILTER: ${{ github.event.inputs.sender_filter || vars.UNLOCK_SENDER_FILTER || '' }}
+          UPCOMING_DAYS: ${{ github.event.inputs.upcoming_days || '60' }}
+          RATE_LIMIT_RPS: "4"
+          MULTICALL_SIZE: "200"
+          CALL_BATCH: "20"
+          LOG_CHUNK: "100000"
+          LOG_LEVEL: "INFO"
+        run: python unlock_tracker.py
