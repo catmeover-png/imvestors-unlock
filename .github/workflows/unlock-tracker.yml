@@ -2,7 +2,7 @@ name: LMTS Investor Unlocks Tracker
 
 on:
   schedule:
-    - cron: "0 6 * * *"        # daily 06:00 UTC (07:00 Lisbon summer time)
+    - cron: "0 4 * * *"        # daily 06:00 UTC (07:00 Lisbon summer time)
   workflow_dispatch:
     inputs:
       sender_filter:
